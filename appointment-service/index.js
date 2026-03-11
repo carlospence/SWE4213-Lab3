@@ -74,6 +74,10 @@ app.post('/appointments', async (req, res) => {
         return res.status(409).json({ status: 'rejected', reason: 'Failed to reserve with doctor service' });
     }
 });
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'Appointment service is running' });
+});
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Appointment service listening on port ${PORT}`));

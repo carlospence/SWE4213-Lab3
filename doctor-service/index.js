@@ -57,6 +57,11 @@ app.post('/doctors/:id/reserve', (req, res) => {
   }
 });
 
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'Doctor service is running' });
+});
+
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
   console.log(`Doctor service listening on port ${PORT}`);
