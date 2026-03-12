@@ -83,7 +83,11 @@ docker compose down
 
 ### 3. Verify the slot was decremented
 
-## Added Addition NextJS Front-end Simple Appointment Booking Form and Dashboard
+## Added an Additional NextJS Front-end App (Simple Appointment Booking Form and Dashboard)
+
+```bash
+http://localhost:5000
+```
 
 No Appointments yet
 
