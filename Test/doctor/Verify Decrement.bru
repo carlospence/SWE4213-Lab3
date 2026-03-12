@@ -1,0 +1,15 @@
+meta {
+  name: Verify Decrement
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{doctorUrl}}/doctors/D001
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

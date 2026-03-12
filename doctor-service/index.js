@@ -1,7 +1,10 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 
+
 app.use(express.json());
+app.use(cors());
 
 // In-memory data for doctors
 const doctors = [
@@ -62,7 +65,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'Doctor service is running' });
 });
 
-const PORT = process.env.PORT || 5002;
+const PORT = 5002;
 app.listen(PORT, () => {
   console.log(`Doctor service listening on port ${PORT}`);
 });

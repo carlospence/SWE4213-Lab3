@@ -1,0 +1,25 @@
+meta {
+  name: Book Appointment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/appointment
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "patient_name": "James Okafor",
+    "patient_email": "james@example.com",
+    "doctor_id": "D001",
+    "reason": "Annual check-up"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

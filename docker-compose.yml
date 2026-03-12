@@ -1,0 +1,96 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: guest  
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  appointment-service:
+    build: ./appointment-service
+    container_name: appointment-service
+    ports:
+      - "5001:5001"
+    environment:
+      # PORT: 5001
+      DOCTOR_SERVICE_URL: http://doctor-service:5002
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      doctor-service:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  doctor-service:
+    build: ./doctor-service
+    container_name: doctor-service
+    ports:
+      - "5002:5002"
+    # environment:
+    #   PORT: 5002
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  record-service:
+    build: ./record-service
+    container_name: record-service
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "5000:5000"
+    environment:
+      NEXT_PUBLIC_DOCTOR_URL: http://localhost:5002
+      NEXT_PUBLIC_APPOINTMENT_URL: http://localhost:5001
+    depends_on:
+      doctor-service:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+volumes:
+  rabbitmq_data:

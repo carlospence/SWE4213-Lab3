@@ -2,24 +2,44 @@ const express = require('express');
 const axios = require('axios');
 const amqp = require('amqplib');
 const { v4: uuidv4 } = require('uuid');
-
+const cors = require('cors');
 const app = express();
+
 app.use(express.json());
+app.use(cors());
+
+// In-memory store for booked appointments
+const appointments = []; // entries mirror appointmentEvent
 
 const DOCTOR_SERVICE_URL = process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002';
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
+const RETRY_ATTEMPTS = 30;
+const RETRY_DELAY_MS = 1000;
 
 let channel;
 
 async function initRabbit() {
-    try {
-        const conn = await amqp.connect(RABBITMQ_URL);
-        channel = await conn.createChannel();
-        await channel.assertExchange('appts', 'fanout', { durable: false });
-        console.log('Connected to RabbitMQ');
-    } catch (err) {
-        console.error('RabbitMQ connection error', err.message);
+    let attempts = 0;
+
+    while (attempts < RETRY_ATTEMPTS) {
+        try {
+            const conn = await amqp.connect(RABBITMQ_URL);
+            channel = await conn.createChannel();
+            await channel.assertExchange('appts', 'fanout', { durable: false });
+            console.log('Successfully connected to RabbitMQ');
+            return; // Successfully connected
+        } catch (err) {
+            attempts++;
+            console.error(`Failed to connect to RabbitMQ (attempt ${attempts}/${RETRY_ATTEMPTS}):`, err.message);
+
+            if (attempts < RETRY_ATTEMPTS) {
+                console.log(`Retrying in ${RETRY_DELAY_MS}ms...`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            }
+        }
     }
+
+    console.error(`Failed to connect to RabbitMQ after ${RETRY_ATTEMPTS} attempts. Service will continue without RabbitMQ.`);
 }
 
 initRabbit();
@@ -50,8 +70,12 @@ app.post('/appointments', async (req, res) => {
             doctor_id,
             doctor_name: doctorName,
             reason,
+            status: 'confirmed',
             timestamp: new Date().toISOString()
         };
+
+        // record in-memory for dashboard queries
+        appointments.push(appointmentEvent);
 
         if (channel) {
             channel.publish('appts', '', Buffer.from(JSON.stringify(appointmentEvent)));
@@ -77,6 +101,11 @@ app.post('/appointments', async (req, res) => {
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'Appointment service is running' });
+});
+
+// Return current appointments log
+app.get('/appointments', (req, res) => {
+    res.json(appointments);
 });
 
 const PORT = process.env.PORT || 5001;
