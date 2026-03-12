@@ -1,5 +1,7 @@
 # Lab 3: Microservice Communication — Synchronous & Asynchronous
 
+# (CHARLES EWAIFOH EJEDAWE - 3789602)
+
 ## Overview
 
 In this lab you will build a **hospital appointment booking system** composed of four microservices. The system demonstrates two fundamental communication styles used in real-world microservice architectures:
